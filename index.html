@@ -406,8 +406,8 @@
         <!-- ========================================================= -->
         <main id="main-scroll-container" class="main-wrapper no-scrollbar">
 
-            <!-- HEADER BANNER -->
-            <div class="top-banner">
+          <!-- HEADER BANNER -->
+<div id="main-top-banner" class="top-banner">
                 <div class="banner-glow-1"></div>
                 <div class="banner-glow-2"></div>
 
@@ -976,7 +976,7 @@
     </div>
     
     <!-- Top Bar Control -->
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-top: 1rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
         <div style="font-weight: 800; font-size: 1rem; color: var(--slate-900);">
             <i class="fas fa-bullhorn" style="color: var(--red-600); margin-right: 6px;"></i> Laporan Warga Terbaru
         </div>
@@ -992,7 +992,7 @@
     </div>
     
     <!-- Container List Card Laporan Warga (Mirip Laporan Terbaru Dashboard) -->
-    <div id="lapor-cards-container" class="list-grid animate-fade-in-up" style="margin-top: 1rem;">
+    <div id="lapor-cards-container" class="list-grid animate-fade-in-up">
         <div style="text-align: center; padding: 3rem 0;">
             <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: var(--red-600);"></i>
             <p style="margin-top: 0.75rem; font-weight: 600; font-size: 0.8125rem; color: var(--slate-600);">Memuat laporan warga...</p>
@@ -1411,6 +1411,7 @@
     </div>
 </div>
 </div>
+</div>
 
 <!-- ========================================================= -->
 <!-- VIEW 5: SATRIA SARPRAS (Halaman Baru)                     -->
@@ -1758,6 +1759,50 @@
     </div>
 </div>
 
+<!-- ========================================================= -->
+<!-- MODAL SHARE VIDEO SATRIA MEDIA                            -->
+<!-- ========================================================= -->
+<div id="modal-share-video" onclick="closeShareVideoModal()" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); z-index: 99999; align-items: center; justify-content: center; padding: 1rem;">
+    <div onclick="event.stopPropagation()" style="background: #ffffff; width: 100%; max-width: 25rem; border-radius: 1.25rem; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #ec4899, #db2777); color: #ffffff; padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 0.625rem;">
+                <div style="width: 2.1rem; height: 2.1rem; border-radius: 0.65rem; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-share-nodes"></i>
+                </div>
+                <div>
+                    <h3 style="font-size: 0.95rem; font-weight: 800; margin: 0;">Bagikan Video Kegiatan</h3>
+                    <p style="font-size: 10px; color: rgba(255,255,255,0.85); margin: 2px 0 0;">Siapkan file video &amp; bagikan lewat menu perangkat</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeShareVideoModal()" style="background: rgba(255,255,255,0.2); border: none; color: #ffffff; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <!-- Body -->
+        <div style="padding: 1.25rem; display: flex; flex-direction: column; gap: 0.85rem;">
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.875rem; padding: 0.75rem 0.9rem;">
+                <div style="font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase;">Judul Video</div>
+                <div id="share-video-judul" style="font-size: 0.82rem; font-weight: 800; color: #0f172a; margin-top: 2px; line-height: 1.35;">-</div>
+                <div id="share-video-url-preview" style="font-size: 11px; color: #db2777; margin-top: 4px; word-break: break-all;">-</div>
+            </div>
+            
+            <!-- Tombol Utama Share Video -->
+            <button type="button" onclick="shareVideoToPlatform('native')" class="tap-scale" style="width: 100%; padding: 0.85rem 1rem; border-radius: 0.875rem; border: none; background: linear-gradient(135deg, #ec4899, #db2777); color: #ffffff; font-weight: 800; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.55rem; box-shadow: 0 10px 20px -6px rgba(219, 39, 119, 0.45);">
+                <i class="fas fa-share-from-square" style="font-size: 1rem;"></i>
+                <span>Share Video</span>
+            </button>
+            
+            <!-- Salin Tautan Cepat -->
+            <button type="button" onclick="copyShareVideoLink()" class="tap-scale" style="width: 100%; padding: 0.65rem; border-radius: 0.75rem; border: 1px solid #e2e8f0; background: #ffffff; color: #334155; font-weight: 700; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                <i class="fas fa-copy"></i>
+                <span>Salin Tautan &amp; Teks Video</span>
+            </button>
+        </div>
+    </div>
+</div>
+
     <!-- ========================================================= -->
     <!-- MODAL OVERLAY -->
     <!-- ========================================================= -->
@@ -1893,13 +1938,21 @@ let formShiftData = {
     waktuUpdate: ''
 };
 
-    
-        document.addEventListener("DOMContentLoaded", function() {
-
-loadNotifikasiPengaduanData(true, false);
-setInterval(function() {
-    loadNotifikasiPengaduanData(true, false);
-}, 15000);
+if ('scrollRestoration' in history) {
+    history.scrollRestoration = 'manual';
+}
+   
+document.addEventListener("DOMContentLoaded", function() {
+            const mainScrollEl = document.getElementById('main-scroll-container');
+            if (mainScrollEl) mainScrollEl.scrollTop = 0;
+            window.scrollTo(0, 0);
+            document.documentElement.scrollTop = 0;
+            document.body.scrollTop = 0;
+            
+            loadNotifikasiPengaduanData(true, false);
+            setInterval(function() {
+                loadNotifikasiPengaduanData(true, false);
+            }, 15000);
 
             // --- 1. REAL-TIME WITA CLOCK ---
             function updateLiveTime() {
@@ -1962,6 +2015,11 @@ viewPanels.forEach(panel => panel.classList.add('hidden'));
 const targetView = document.getElementById('view-' + tabName);
 if (targetView) {
   targetView.classList.remove('hidden');
+}
+
+const topBannerEl = document.getElementById('main-top-banner');
+if (topBannerEl) {
+    topBannerEl.classList.toggle('hidden', tabName !== 'beranda');
 }
     
 // Panggil fungsi data jika membuka tab tertentu
@@ -2107,21 +2165,34 @@ if (tabName === 'spasial') {
     document.body.scrollTop = 0;
   }, 15);
 
-    // 3. Sinkronisasi status aktif pada tombol tab menu bawah & sidebar
-   const tabs = ['beranda', 'riwayat', 'notifikasi', 'pengaturan', 'sarpras', 'anggota', 'lapor', 'armadapos', 'respon', 'rescue', 'spasial', 'media', 'riwayat'];
-   
-    tabs.forEach(t => {
-        // Mobile
-        const mBtn = document.getElementById('tab-' + t);
-        const mInd = document.getElementById('indicator-' + t);
-        if (mBtn) mBtn.classList.toggle('active', t === tabName);
-        if (mInd) mInd.classList.toggle('hidden', t !== tabName);
-        
-        // Desktop
-        const dBtn = document.getElementById('sidebar-tab-' + t);
-        if (dBtn) dBtn.classList.toggle('active', t === tabName);
-    });
+    // Sinkronisasi status aktif pada tombol tab menu bawah & sidebar
+const tabs = ['beranda', 'riwayat', 'notifikasi', 'pengaturan', 'sarpras', 'anggota', 'lapor', 'armadapos', 'respon', 'rescue', 'spasial', 'media'];
+
+tabs.forEach(t => {
+    // Mobile
+    const mBtn = document.getElementById('tab-' + t);
+    const mInd = document.getElementById('indicator-' + t);
+    if (mBtn) mBtn.classList.toggle('active', t === tabName);
+    if (mInd) mInd.classList.toggle('hidden', t !== tabName);
+    
+    // Desktop
+    const dBtn = document.getElementById('sidebar-tab-' + t);
+    if (dBtn) dBtn.classList.toggle('active', t === tabName);
+});
+
+// Paksa posisi scroll kembali ke paling atas setelah view & status tab diperbarui
+const forceScrollTop = () => {
+    if (mainContainer) mainContainer.scrollTop = 0;
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+};
+
+forceScrollTop();
+requestAnimationFrame(forceScrollTop);
+setTimeout(forceScrollTop, 50);
 }
+
         // --- 4. MODALS ---
         function openMenuModal(title, description, colorClass, iconClass) {
             document.getElementById('modal-title').textContent = title;
@@ -9382,15 +9453,23 @@ function renderVideoCards(dataList) {
         let embedUrl = rawVideoUrl;
         let thumbUrl = '';
         let downloadUrl = rawVideoUrl.replace('/preview', '/view').replace('/view?usp=drivesdk', '');
+        let shareViewUrl = rawVideoUrl; // Link yang nyaman dibuka orang lain saat di-share
+        
         const matchId = rawVideoUrl.match(/\/d\/([a-zA-Z0-9_-]+)/) || rawVideoUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
         if (matchId && matchId[1]) {
             fileId = matchId[1];
             embedUrl = `https://drive.google.com/file/d/${fileId}/preview?autoplay=1`;
             thumbUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=w600`;
             downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+            shareViewUrl = `https://drive.google.com/file/d/${fileId}/view`;
         }
         
         const tanggalFormatted = tanggalRaw ? formatDateIndonesia(tanggalRaw) : '-';
+        
+        // Escape karakter kutip agar tidak merusak atribut onclick
+        const safeIdVideo = String(idVideo).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        const safeJudul = String(judul).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        const safeShareUrl = String(shareViewUrl).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
         
         // Aksi klik tombol play bulat: langsung putar video HTML5 (dan otomatis fallback ke iframe jika file besar)
         const playAction = fileId ?
@@ -9407,7 +9486,7 @@ function renderVideoCards(dataList) {
                 <div onclick="${playAction}" 
                      style="position: relative; width: 100%; height: 100%; cursor: pointer; display: flex; align-items: center; justify-content: center; background: #0f172a;">
                     
-                    ${thumbUrl ? `<img src="${thumbUrl}" alt="${judul}" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.78;" onerror="this.style.display='none'">` : ''}
+                    ${thumbUrl ? `<img src="${thumbUrl}" alt="${safeJudul}" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.78;" onerror="this.style.display='none'">` : ''}
                     
                     <!-- Tombol Play Bulat -->
                     <button type="button" class="btn-play-video tap-scale" title="Putar Video"
@@ -9433,13 +9512,16 @@ function renderVideoCards(dataList) {
                     <span style="font-size: 9px; font-weight: 800; color: #f472b6; background: rgba(219, 39, 119, 0.25); padding: 1px 5px; border-radius: 4px;">${idVideo}</span>
                     <span style="font-size: 9px; color: #cbd5e1;"><i class="far fa-calendar-alt"></i> ${tanggalFormatted}</span>
                 </div>
-                <h3 class="tiktok-video-title" title="${judul}">${judul}</h3>
+                <h3 class="tiktok-video-title" title="${safeJudul}">${judul}</h3>
                 <p class="tiktok-video-desc">${deskripsi}</p>
             </div>
             
             <!-- 3. Sidebar Tombol Aksi di Kanan -->
             <div class="tiktok-sidebar-actions">
-                <button onclick="openFormEditVideo(${rowIndex})" class="tiktok-action-btn tap-scale" title="Edit Video">
+                <button type="button" onclick="event.stopPropagation(); openShareVideoModal('${safeIdVideo}', '${safeJudul}', '${safeShareUrl}')" class="tiktok-action-btn tap-scale" title="Bagikan Video (WA, TikTok, YouTube, IG)">
+                    <i class="fas fa-share-nodes"></i>
+                </button>
+                <button type="button" onclick="event.stopPropagation(); openFormEditVideo(${rowIndex})" class="tiktok-action-btn tap-scale" title="Edit Video">
                     <i class="fas fa-edit"></i>
                 </button>
             </div>
@@ -9449,6 +9531,7 @@ function renderVideoCards(dataList) {
     
     container.innerHTML = html;
 }
+
 // Fungsi untuk memperluas tinggi overlay bawah saat diklik
 function toggleVideoOverlay(overlayEl) {
     const isExpanded = overlayEl.classList.contains('is-expanded');
@@ -12959,6 +13042,303 @@ function submitEditMasterRef(e, type, rowNum, encodedOldVal, encodedOldSatuan = 
         });
 }
 
-    </script>
+// =========================================================
+// HANDLER SHARE VIDEO KE WHATSAPP, TIKTOK, YOUTUBE & INSTAGRAM
+// =========================================================
+let activeShareVideo = {
+id: '',
+title: '',
+url: ''
+};
+
+function resolveVideoShareUrl(rawUrl, idVideo) {
+const trimmed = String(rawUrl || '').trim();
+if (trimmed && (trimmed.startsWith('http://') || trimmed.startsWith('https://'))) {
+return trimmed;
+}
+// Jika link kosong atau bukan URL penuh, pakai URL halaman saat ini + parameter video
+const baseUrl = window.location.href.split('#')[0].split('?')[0];
+return idVideo
+? `${baseUrl}?media=video&id=${encodeURIComponent(idVideo)}`
+: baseUrl;
+}
+
+function extractDriveFileId(rawUrl) {
+const str = String(rawUrl || '');
+const match = str.match(/\/d\/([a-zA-Z0-9_-]+)/) || str.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+return match && match[1] ? match[1] : '';
+}
+
+function openShareVideoModal(idVideo, judulVideo, rawUrlVideo) {
+const finalUrl = resolveVideoShareUrl(rawUrlVideo, idVideo);
+const extractedId = extractDriveFileId(rawUrlVideo || finalUrl);
+
+activeShareVideo = {
+id: idVideo || '-',
+fileId: extractedId,
+title: judulVideo || 'Video Kegiatan Satria Damkar Malinau',
+url: finalUrl
+};
+
+const titleEl = document.getElementById('share-video-judul');
+const urlPreviewEl = document.getElementById('share-video-url-preview');
+const modalEl = document.getElementById('modal-share-video');
+
+if (titleEl) titleEl.textContent = activeShareVideo.title;
+if (urlPreviewEl) urlPreviewEl.textContent = activeShareVideo.url;
+if (modalEl) modalEl.style.display = 'flex';
+}
+
+function closeShareVideoModal() {
+const modalEl = document.getElementById('modal-share-video');
+if (modalEl) modalEl.style.display = 'none';
+}
+
+function copyTextFallback(text) {
+if (navigator.clipboard && navigator.clipboard.writeText) {
+return navigator.clipboard.writeText(text).catch(() => legacyCopy(text));
+}
+return Promise.resolve(legacyCopy(text));
+}
+
+function legacyCopy(text) {
+const ta = document.createElement('textarea');
+ta.value = text;
+ta.style.position = 'fixed';
+ta.style.opacity = '0';
+document.body.appendChild(ta);
+ta.select();
+try {
+document.execCommand('copy');
+} catch (e) {
+console.error('Gagal menyalin teks:', e);
+}
+document.body.removeChild(ta);
+}
+
+function copyShareVideoLink() {
+const shareText = `${activeShareVideo.title}\n${activeShareVideo.url}`;
+copyTextFallback(shareText).then(() => {
+if (typeof showToastNotification === 'function') {
+showToastNotification('Tautan Disalin', 'Judul dan link video berhasil disalin ke clipboard.', 'success');
+}
+});
+}
+
+function isMobileDevice() {
+return /Android|iPhone|iPad|iPod|Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent || '');
+}
+
+function tryOpenAppWithFallback(appSchemes, webFallbackUrl) {
+if (!isMobileDevice() || !Array.isArray(appSchemes) || appSchemes.length === 0) {
+if (webFallbackUrl) {
+window.open(webFallbackUrl, '_blank', 'noopener,noreferrer');
+}
+return;
+}
+
+let appOpened = false;
+const handleVisibility = () => {
+if (document.hidden) {
+appOpened = true;
+document.removeEventListener('visibilitychange', handleVisibility);
+}
+};
+document.addEventListener('visibilitychange', handleVisibility);
+
+// Coba buka deep link pertama
+try {
+window.location.href = appSchemes[0];
+} catch (err) {
+console.warn('Deep link gagal:', err);
+}
+
+// Coba deep link kedua bila belum berpindah aplikasi
+if (appSchemes[1]) {
+setTimeout(() => {
+if (!appOpened && !document.hidden) {
+try {
+window.location.href = appSchemes[1];
+} catch (err) {
+console.warn('Deep link alternatif gagal:', err);
+}
+}
+}, 400);
+}
+
+// Fallback ke web jika aplikasi tidak terbuka
+setTimeout(() => {
+document.removeEventListener('visibilitychange', handleVisibility);
+if (!appOpened && !document.hidden && webFallbackUrl) {
+window.location.href = webFallbackUrl;
+}
+}, 1250);
+}
+
+window.VIDEO_PROXY_URL = "https://satria-video.glideaceh.workers.dev/?fileId=";
+
+function getDirectDownloadCandidates(fileId, rawUrl) {
+    const urls = [];
+    if (fileId && window.VIDEO_PROXY_URL) {
+        urls.push(`${window.VIDEO_PROXY_URL}${encodeURIComponent(fileId)}`);
+    }
+    if (fileId) {
+        urls.push(`https://drive.usercontent.google.com/download?id=${encodeURIComponent(fileId)}&export=download&confirm=t`);
+        urls.push(`https://drive.google.com/uc?export=download&id=${encodeURIComponent(fileId)}&confirm=t`);
+    }
+    if (rawUrl && rawUrl.startsWith('http')) {
+        urls.push(rawUrl);
+    }
+    return urls;
+}
+
+function triggerBackgroundBrowserDownload(downloadUrl, fileName) {
+    const a = document.createElement('a');
+    a.href = downloadUrl;
+    a.download = fileName || 'video-kegiatan.mp4';
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+        if (a.parentNode) document.body.removeChild(a);
+    }, 500);
+}
+
+async function buildVideoShareFile() {
+    const fileId = activeShareVideo.fileId || (typeof extractDriveFileId === 'function' ? extractDriveFileId(activeShareVideo.url || '') : '');
+    const safeTitle = (activeShareVideo.title || 'video-kegiatan')
+        .replace(/[^a-zA-Z0-9_-]+/g, '_')
+        .replace(/^_+|_+$/g, '') || 'video-kegiatan';
+    
+    const candidates = getDirectDownloadCandidates(fileId, activeShareVideo.url);
+    
+    for (const target of candidates) {
+        try {
+            const response = await fetch(target, {
+                method: 'GET',
+                mode: 'cors',
+                credentials: 'omit'
+            });
+            if (!response.ok) continue;
+            
+            const blob = await response.blob();
+            if (!blob || blob.size === 0) continue;
+            
+            // Abaikan jika Google Drive membalas halaman HTML konfirmasi/login
+            if (blob.type && blob.type.includes('text/html')) {
+                continue;
+            }
+            
+            const mimeType = (blob.type && blob.type.startsWith('video/')) ? blob.type : 'video/mp4';
+            const ext = mimeType.includes('webm') ? 'webm' : (mimeType.includes('quicktime') ? 'mov' : 'mp4');
+            const videoFile = new File([blob], `${safeTitle}.${ext}`, { type: mimeType });
+            
+            if (!navigator.canShare || navigator.canShare({ files: [videoFile] })) {
+                return videoFile;
+            }
+        } catch (err) {
+            console.warn('Tidak bisa mengambil blob video langsung:', target, err);
+        }
+    }
+    
+    return null;
+}
+
+function openDirectVideoLink() {
+    const url = activeShareVideo.url || window.location.href;
+    if (!url) return;
+    window.open(url, '_blank', 'noopener,noreferrer');
+}
+
+async function shareVideoFileNative() {
+    const title = activeShareVideo.title || 'Video Kegiatan Satria Damkar Malinau';
+    const url = activeShareVideo.url || window.location.href;
+    const shareCaption = `${title} - Satria Damkar Kota Malinau\n${url}`;
+    
+    await copyTextFallback(shareCaption);
+    
+    if (typeof showToastNotification === 'function') {
+        showToastNotification(
+            'Menyiapkan Video...',
+            'Mengunduh video di latar belakang sebelum dibagikan.',
+            'info'
+        );
+    }
+    
+    if (typeof navigator.share === 'function') {
+        const videoFile = await buildVideoShareFile();
+        if (videoFile) {
+            try {
+                await navigator.share({
+                    title: title,
+                    text: shareCaption,
+                    files: [videoFile]
+                });
+                return true;
+            } catch (err) {
+                if (err && err.name === 'AbortError') return true;
+            }
+        }
+    }
+    
+    return false;
+}
+
+function shareVideoToPlatform(platform) {
+const title = activeShareVideo.title || 'Video Kegiatan Satria Damkar Malinau';
+const url = activeShareVideo.url || window.location.href;
+const fileId = activeShareVideo.fileId || (typeof extractDriveFileId === 'function' ? extractDriveFileId(url) : '');
+const directDownloadUrl = fileId ?
+`https://drive.google.com/uc?export=download&id=${encodeURIComponent(fileId)}&confirm=t` :
+url;
+const preferredDownloadUrl = (fileId && window.VIDEO_PROXY_URL) ?
+`${window.VIDEO_PROXY_URL}${encodeURIComponent(fileId)}` :
+directDownloadUrl;
+const safeFileName = `${(title || 'video-kegiatan').replace(/[^a-zA-Z0-9_-]+/g, '_')}.mp4`;
+const captionText = `${title} - Satria Damkar Kota Malinau\n${url}`;
+const destinationLabel = (!platform || platform === 'native') ? 'aplikasi pilihan Anda' : platform.toUpperCase();
+
+copyTextFallback(captionText).then(async () => {
+if (typeof showToastNotification === 'function') {
+showToastNotification(
+'Menyiapkan Video...',
+'Mengunduh video di latar belakang sebelum dibagikan.',
+'info'
+);
+}
+
+// 1. Coba kirim FILE VIDEO langsung ke menu share HP (untuk WA, IG, TikTok, YouTube)
+if (typeof navigator.share === 'function' && isMobileDevice()) {
+const videoFile = await buildVideoShareFile();
+if (videoFile) {
+try {
+await navigator.share({
+title: title,
+text: captionText,
+files: [videoFile]
+});
+return;
+} catch (err) {
+if (err && err.name === 'AbortError') return;
+}
+}
+}
+
+// 2. Fallback: picu unduhan file video via Worker proxy agar bebas pilih email & bisa diposting
+if (typeof showToastNotification === 'function') {
+showToastNotification(
+'Mengunduh Video',
+`Caption disalin. File video sedang diunduh untuk diposting ke ${destinationLabel}.`,
+'success'
+);
+}
+
+triggerBackgroundBrowserDownload(preferredDownloadUrl, safeFileName);
+});
+}
+ 
+</script>
 </body>
 </html>
