@@ -1218,6 +1218,20 @@
                     <i class="fas fa-search"></i>
                     <input type="text" id="video-search-input" class="inventory-search-input" onkeyup="filterVideoCards()" placeholder="Cari judul video, ID, kategori...">
                 </div>
+                
+                <!-- Tambahkan blok ini tepat di atas tombol submit pada Form Tambah Video -->
+<div id="video-upload-progress-wrapper" style="display: none; margin-top: 1rem; padding: 0.85rem 1rem; border-radius: 0.875rem; background: #fdf2f8; border: 1px solid #fbcfe8;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.45rem;">
+        <span id="video-upload-progress-status" style="font-size: 0.72rem; font-weight: 700; color: #9d174d;">
+            <i class="fas fa-cloud-upload-alt"></i> Mengupload video...
+        </span>
+        <span id="video-upload-progress-percent" style="font-size: 0.8rem; font-weight: 900; color: #db2777;">0%</span>
+    </div>
+    <div style="width: 100%; height: 10px; border-radius: 9999px; background: #fce7f3; overflow: hidden;">
+        <div id="video-upload-progress-bar" style="width: 0%; height: 100%; border-radius: 9999px; background: linear-gradient(90deg, #ec4899, #db2777); transition: width 0.2s ease;"></div>
+    </div>
+</div>
+                
                 <button onclick="openFormTambahVideo()" class="tap-scale" style="background: linear-gradient(135deg, #ec4899, #db2777); color: white; padding: 0.625rem 1.25rem; border-radius: 0.75rem; font-weight: 700; font-size: 0.75rem; display: flex; align-items: center; gap: 8px; border: none; cursor: pointer;">
                     <i class="fas fa-plus-circle"></i> Tambah Video
                 </button>
@@ -9464,6 +9478,10 @@ function renderVideoCards(dataList) {
             shareViewUrl = `https://drive.google.com/file/d/${fileId}/view`;
         }
         
+        // Prioritaskan thumbnail lokal instan dari sessionStorage jika video baru saja diupload
+        const localThumbUrl = (typeof getLocalVideoThumb === 'function') ? getLocalVideoThumb(idVideo, judul) : '';
+        const activeCoverUrl = localThumbUrl || thumbUrl;
+        
         const tanggalFormatted = tanggalRaw ? formatDateIndonesia(tanggalRaw) : '-';
         
         // Escape karakter kutip agar tidak merusak atribut onclick
@@ -9482,11 +9500,23 @@ function renderVideoCards(dataList) {
             <div style="position: relative; width: 100%; height: 100%; overflow: hidden; background: #000;">
                 ${embedUrl
                 ? `
-                <!-- Cover Thumbnail + Tombol Play Bulat -->
+                <!-- Cover Thumbnail Instan + Fallback Frame Pertama Video + Tombol Play Bulat -->
                 <div onclick="${playAction}" 
                      style="position: relative; width: 100%; height: 100%; cursor: pointer; display: flex; align-items: center; justify-content: center; background: #0f172a;">
                     
-                    ${thumbUrl ? `<img src="${thumbUrl}" alt="${safeJudul}" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.78;" onerror="this.style.display='none'">` : ''}
+                    ${fileId ? `
+                    <!-- Fallback preview frame pertama video jika thumbnail Drive belum selesai diproses -->
+                    <video src="${downloadUrl}#t=0.5" preload="metadata" muted playsinline
+                           style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.78; pointer-events: none;"
+                           onerror="this.style.display='none'"></video>
+                    ` : ''}
+
+                    ${activeCoverUrl ? `
+                    <img src="${activeCoverUrl}" alt="${safeJudul}"
+                         style="position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; object-fit: cover; opacity: 0.85;"
+                         onload="this.style.display='block'"
+                         onerror="handleVideoCoverError(this, '${localThumbUrl ? thumbUrl : ''}')">
+                    ` : ''}
                     
                     <!-- Tombol Play Bulat -->
                     <button type="button" class="btn-play-video tap-scale" title="Putar Video"
@@ -9530,6 +9560,33 @@ function renderVideoCards(dataList) {
     });
     
     container.innerHTML = html;
+}
+
+function handleVideoCoverError(imgEl, fallbackDriveThumbUrl) {
+    if (!imgEl) return;
+    if (fallbackDriveThumbUrl) {
+        retryDriveThumbnail(imgEl, fallbackDriveThumbUrl);
+    } else if (imgEl.src && imgEl.src.includes('drive.google.com/thumbnail')) {
+        retryDriveThumbnail(imgEl, imgEl.src.split('&_cb=')[0]);
+    } else {
+        imgEl.style.display = 'none';
+    }
+}
+
+// Fungsi bantuan auto-retry thumbnail Google Drive yang baru saja diupload
+function retryDriveThumbnail(imgEl, baseUrl) {
+    if (!imgEl || !baseUrl) return;
+    imgEl.style.display = 'none';
+    
+    const retryCount = parseInt(imgEl.getAttribute('data-retry') || '0', 10);
+    if (retryCount >= 5) return; // Maksimal 5x percobaan ulang otomatis
+    
+    imgEl.setAttribute('data-retry', String(retryCount + 1));
+    const delayMs = 2500 * (retryCount + 1); // 2.5s, 5s, 7.5s, 10s, 12.5s
+    
+    setTimeout(() => {
+        imgEl.src = `${baseUrl}&_cb=${Date.now()}`;
+    }, delayMs);
 }
 
 // Fungsi untuk memperluas tinggi overlay bawah saat diklik
@@ -9673,7 +9730,7 @@ function renderFormVideo(mode, data = {}) {
     `;
 }
 
-// 4. Submit Form Video (Dengan Validasi Ukuran File & Penanganan Error)
+// 4. Submit Form Video (Dengan Progress Bar Persentase, Validasi Ukuran File & Penanganan Error)
 function submitFormVideo(e, mode, rowIndex) {
     e.preventDefault();
     const fileInput = document.getElementById('video-file-input');
@@ -9681,7 +9738,7 @@ function submitFormVideo(e, mode, rowIndex) {
     // Validasi ukuran file maksimal 20 MB agar tidak gagal koneksi/timeout di Google Apps Script
     if (fileInput.files.length > 0) {
         const fileSizeMB = fileInput.files[0].size / (1024 * 1024);
-        if (fileSizeMB > 20) {
+        if (fileSizeMB > 70) {
             showToastNotification('File Terlalu Besar', `Ukuran video Anda ${fileSizeMB.toFixed(1)} MB. Maksimal 20 MB agar server tidak timeout.`, 'warning');
             return;
         }
@@ -9700,22 +9757,52 @@ function submitFormVideo(e, mode, rowIndex) {
         videoMimeType: ''
     };
     
+    // Tampilan Progress Bar Persentase di dalam sub-modal
     document.getElementById('sub-modal-body').innerHTML = `
-        <div style="text-align:center; padding: 2.5rem 0;">
-            <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: #ec4899;"></i>
-            <p style="margin-top:0.75rem; font-weight:600; font-size:0.8125rem; color:var(--slate-600);">Mengunggah video ke Google Drive &amp; menyimpan data...</p>
-            <p style="margin-top:0.25rem; font-size:0.75rem; color:var(--slate-400);">Mohon jangan tutup halaman ini sampai proses selesai.</p>
+        <div id="video-upload-progress-box" style="padding: 2rem 1.25rem; text-align: center; display: flex; flex-direction: column; gap: 0.9rem;">
+            <div style="width: 3.5rem; height: 3.5rem; margin: 0 auto; border-radius: 1rem; background: #fdf2f8; color: #db2777; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">
+                <i class="fas fa-cloud-upload-alt"></i>
+            </div>
+            <div>
+                <h4 style="margin: 0; font-size: 0.95rem; font-weight: 800; color: var(--slate-900);">Mengunggah Video ke Google Drive</h4>
+                <p id="video-progress-status-text" style="margin: 0.3rem 0 0; font-size: 0.75rem; font-weight: 600; color: var(--slate-600);">Menyiapkan file video...</p>
+            </div>
+
+            <!-- Bar Persentase -->
+            <div style="width: 100%; max-width: 24rem; margin: 0 auto;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                    <span style="font-size: 0.7rem; font-weight: 700; color: var(--slate-500);">Progress Upload</span>
+                    <span id="video-progress-percent-text" style="font-size: 0.9rem; font-weight: 900; color: #db2777;">0%</span>
+                </div>
+                <div style="width: 100%; height: 12px; border-radius: 9999px; background: #fce7f3; overflow: hidden; border: 1px solid #fbcfe8;">
+                    <div id="video-progress-bar-fill" style="width: 0%; height: 100%; border-radius: 9999px; background: linear-gradient(90deg, #ec4899, #db2777); transition: width 0.2s ease;"></div>
+                </div>
+            </div>
+
+            <p style="margin: 0; font-size: 0.72rem; color: var(--slate-400);">Mohon jangan tutup halaman ini sampai proses selesai.</p>
         </div>
     `;
     
     if (fileInput.files.length > 0) {
         const file = fileInput.files[0];
+        const statusText = document.getElementById('video-progress-status-text');
+        if (statusText) {
+            statusText.textContent = 'Membaca & mengonversi file video...';
+        }
+        
         const reader = new FileReader();
         reader.onload = function(evt) {
             payload.videoBase64 = evt.target.result.split(',')[1];
             payload.videoFileName = file.name;
             payload.videoMimeType = file.type || 'video/mp4';
-            sendVideoToBackend(payload, mode);
+
+            // Tangkap frame video secara lokal agar thumbnail langsung muncul tanpa menunggu Drive
+            captureLocalVideoThumbnail(file, function(thumbDataUrl) {
+                if (thumbDataUrl) {
+                    saveLocalVideoThumb(payload.idVideo, payload.judul, thumbDataUrl);
+                }
+                sendVideoToBackend(payload, mode);
+            });
         };
         reader.onerror = function() {
             showToastNotification('Gagal Membaca File', 'File video tidak dapat dibaca oleh browser.', 'warning');
@@ -9727,34 +9814,159 @@ function submitFormVideo(e, mode, rowIndex) {
     }
 }
 
-// 5. Kirim Payload ke GAS Backend
+function captureLocalVideoThumbnail(file, callback) {
+    try {
+        const videoEl = document.createElement('video');
+        videoEl.preload = 'metadata';
+        videoEl.muted = true;
+        videoEl.playsInline = true;
+
+        const objectUrl = URL.createObjectURL(file);
+        videoEl.src = objectUrl;
+
+        let settled = false;
+        const finish = (dataUrl) => {
+            if (settled) return;
+            settled = true;
+            URL.revokeObjectURL(objectUrl);
+            callback(dataUrl || '');
+        };
+
+        // Fallback aman jika browser lambat memuat frame
+        const timeoutId = setTimeout(() => finish(''), 2500);
+
+        videoEl.onloadedmetadata = function() {
+            const targetTime = Math.min(0.5, Math.max(0.1, (videoEl.duration || 1) * 0.1));
+            videoEl.currentTime = targetTime;
+        };
+
+        videoEl.onseeked = function() {
+            clearTimeout(timeoutId);
+            try {
+                const canvas = document.createElement('canvas');
+                const maxW = 480;
+                const scale = videoEl.videoWidth > maxW ? (maxW / videoEl.videoWidth) : 1;
+                canvas.width = Math.max(1, Math.round((videoEl.videoWidth || 360) * scale));
+                canvas.height = Math.max(1, Math.round((videoEl.videoHeight || 640) * scale));
+
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+                const jpegUrl = canvas.toDataURL('image/jpeg', 0.72);
+                finish(jpegUrl);
+            } catch (e) {
+                finish('');
+            }
+        };
+
+        videoEl.onerror = function() {
+            clearTimeout(timeoutId);
+            finish('');
+        };
+    } catch (err) {
+        callback('');
+    }
+}
+
+function saveLocalVideoThumb(idVideo, judul, thumbDataUrl) {
+    try {
+        if (!thumbDataUrl) return;
+        if (idVideo) {
+            sessionStorage.setItem('satria_vid_thumb_id_' + idVideo, thumbDataUrl);
+        }
+        if (judul) {
+            sessionStorage.setItem('satria_vid_thumb_title_' + judul.trim().toLowerCase(), thumbDataUrl);
+        }
+    } catch (e) {
+        // Abaikan jika kuota sessionStorage penuh
+    }
+}
+
+function getLocalVideoThumb(idVideo, judul) {
+    try {
+        if (idVideo) {
+            const byId = sessionStorage.getItem('satria_vid_thumb_id_' + idVideo);
+            if (byId) return byId;
+        }
+        if (judul) {
+            const byTitle = sessionStorage.getItem('satria_vid_thumb_title_' + judul.trim().toLowerCase());
+            if (byTitle) return byTitle;
+        }
+    } catch (e) {
+        // Abaikan error storage
+    }
+    return '';
+}
+
+// 5. Kirim Payload ke GAS Backend (Stabil untuk GAS dengan Animasi Progress Persentase)
 function sendVideoToBackend(payload, mode) {
+    const barFill = document.getElementById('video-progress-bar-fill');
+    const percentText = document.getElementById('video-progress-percent-text');
+    const statusText = document.getElementById('video-progress-status-text');
+    
+    const jsonBody = JSON.stringify(payload);
+    const payloadSizeMB = (new Blob([jsonBody]).size / (1024 * 1024)).toFixed(2);
+    
+    let currentPct = 5;
+    if (barFill) barFill.style.width = currentPct + '%';
+    if (percentText) percentText.textContent = currentPct + '%';
+    if (statusText) {
+        statusText.textContent = `Mengirim data (${payloadSizeMB} MB) ke Google Apps Script...`;
+    }
+    
+    // Simulasi progres bertahap sampai 90% sambil menunggu respon GAS
+    const progressTimer = setInterval(() => {
+        if (currentPct < 90) {
+            currentPct += currentPct < 50 ? 10 : 5;
+            if (currentPct > 90) currentPct = 90;
+            if (barFill) barFill.style.width = currentPct + '%';
+            if (percentText) percentText.textContent = currentPct + '%';
+            
+            if (currentPct >= 75 && statusText) {
+                statusText.textContent = 'Menyimpan video ke Google Drive & memperbarui data...';
+            }
+        }
+    }, 350);
+    
     fetch(GAS_URL, {
             method: 'POST',
             headers: {
-                'Content-Type': 'text/plain;charset=utf-8' // Menghindari CORS preflight OPTIONS yang sering ditolak GAS
+                'Content-Type': 'text/plain;charset=utf-8'
             },
-            body: JSON.stringify(payload)
+            body: jsonBody
         })
         .then(res => {
             if (!res.ok) throw new Error('HTTP Status ' + res.status);
             return res.json();
         })
         .then(res => {
-            if (res.status === 'success') {
-                showToastNotification('Berhasil', res.message || 'Video berhasil disimpan!', 'success');
-                closeSubModal();
+        clearInterval(progressTimer);
+        if (barFill) barFill.style.width = '100%';
+        if (percentText) percentText.textContent = '100%';
+        if (statusText) statusText.textContent = 'Selesai (100%)!';
+        
+        if (res.status === 'success') {
+            showToastNotification('Berhasil', res.message || 'Video berhasil disimpan!', 'success');
+            if (typeof loadVideoData === 'function') {
                 loadVideoData();
-            } else {
-                showToastNotification('Gagal', res.message || 'Gagal menyimpan video di server', 'warning');
-                closeSubModal();
             }
-        })
-        .catch(err => {
-            console.error('Error upload video:', err);
-            showToastNotification('Kesalahan Koneksi', 'Koneksi terputus atau ukuran video terlalu besar untuk server.', 'warning');
+            setTimeout(() => {
+                closeSubModal();
+            }, 500);
+        } else {
+            showToastNotification('Gagal Menyimpan', res.message || 'Server gagal menyimpan video.', 'warning');
             closeSubModal();
-        });
+        }
+    })
+    .catch(err => {
+        clearInterval(progressTimer);
+        console.error('Detail error kirim video ke GAS:', err);
+        showToastNotification(
+            'Gagal Mengirim Data',
+            `Detail: ${err.message || 'Koneksi terputus'} (Ukuran payload: ${payloadSizeMB} MB). Cek URL GAS_URL & Console browser.`,
+            'warning'
+        );
+        closeSubModal();
+    });
 }
 
 // Fungsi pembantu untuk memformat tanggal ke format Indonesia
